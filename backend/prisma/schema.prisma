@@ -1,0 +1,110 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model assignments {
+  id                Int              @id @default(autoincrement())
+  base_id           Int?
+  equipment_type_id Int?
+  personnel_name    String           @db.VarChar(100)
+  quantity          Int
+  status            String?          @default("ACTIVE") @db.VarChar(20)
+  created_at        DateTime?        @default(now()) @db.Timestamp(6)
+  initiated_by      Int?
+  bases             bases?           @relation(fields: [base_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  equipment_types   equipment_types? @relation(fields: [equipment_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users             users?           @relation(fields: [initiated_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model audit_logs {
+  id         Int       @id @default(autoincrement())
+  user_id    Int?
+  action     String    @db.VarChar(50)
+  details    String
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  users      users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model bases {
+  id                                             Int            @id @default(autoincrement())
+  name                                           String         @db.VarChar(100)
+  location                                       String         @db.VarChar(150)
+  assignments                                    assignments[]
+  expenditures                                   expenditures[]
+  purchases                                      purchases[]
+  transfers_transfers_destination_base_idTobases transfers[]    @relation("transfers_destination_base_idTobases")
+  transfers_transfers_source_base_idTobases      transfers[]    @relation("transfers_source_base_idTobases")
+  users                                          users[]
+}
+
+model equipment_types {
+  id           Int            @id @default(autoincrement())
+  name         String         @db.VarChar(100)
+  category     String         @db.VarChar(50)
+  assignments  assignments[]
+  expenditures expenditures[]
+  purchases    purchases[]
+  transfers    transfers[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model expenditures {
+  id                Int              @id @default(autoincrement())
+  base_id           Int?
+  equipment_type_id Int?
+  quantity          Int
+  reason            String           @db.VarChar(255)
+  status            String?          @default("VERIFIED") @db.VarChar(20)
+  created_at        DateTime?        @default(now()) @db.Timestamp(6)
+  initiated_by      Int?
+  bases             bases?           @relation(fields: [base_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  equipment_types   equipment_types? @relation(fields: [equipment_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users             users?           @relation(fields: [initiated_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model purchases {
+  id                Int              @id @default(autoincrement())
+  base_id           Int?
+  equipment_type_id Int?
+  quantity          Int
+  created_at        DateTime?        @default(now()) @db.Timestamp(6)
+  bases             bases?           @relation(fields: [base_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  equipment_types   equipment_types? @relation(fields: [equipment_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model transfers {
+  id                                         Int              @id @default(autoincrement())
+  source_base_id                             Int?
+  destination_base_id                        Int?
+  equipment_type_id                          Int?
+  quantity                                   Int
+  status                                     String?          @default("COMPLETED") @db.VarChar(20)
+  timestamp                                  DateTime?        @default(now()) @db.Timestamp(6)
+  initiated_by                               Int?
+  bases_transfers_destination_base_idTobases bases?           @relation("transfers_destination_base_idTobases", fields: [destination_base_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  equipment_types                            equipment_types? @relation(fields: [equipment_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                                      users?           @relation(fields: [initiated_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  bases_transfers_source_base_idTobases      bases?           @relation("transfers_source_base_idTobases", fields: [source_base_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  id            Int            @id @default(autoincrement())
+  username      String         @unique @db.VarChar(50)
+  password_hash String         @db.VarChar(255)
+  role          String?        @db.VarChar(30)
+  base_id       Int?
+  assignments   assignments[]
+  audit_logs    audit_logs[]
+  expenditures  expenditures[]
+  transfers     transfers[]
+  bases         bases?         @relation(fields: [base_id], references: [id], onUpdate: NoAction)
+}
